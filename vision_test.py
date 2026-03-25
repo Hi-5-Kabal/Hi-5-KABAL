@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import time
+import numpy as np
+import os
 
 # 1. Configuración de MediaPipe
 mp_holistic = mp.solutions.holistic 
@@ -72,17 +74,93 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 
+        ##EXTRACT KEYPOINTS VALUES
+        pose=[]
+        for res in results.pose_landmarks.landmark:
+            test = np.array([res.x, res.y, res.z, res.visibility])
+            pose.append(test)
+        
+        #cada landmark debe tener x, y, z si no pues se rellena con ceros
+        #para manejar los errores de si el sistema no detecta manos se crea un array con ceros
+        #i.e. incluso si no hay face marks vamos a pasar x un array del mismo tam
+        def extract_keypoints(results):
+            pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
+            face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(1404)
+            lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+            return np.concatenate([pose, face, lh, rh]) #concatenar toods los resultados o sea queda como un arreglo enorme
+        
+        result_test = extract_keypoints(results)
+
+        #len(results.left_hand_landmarks.landmark)*3 -> debería imprimir 63
+
+        np.zeros(21*3)
+
+
+
+        
+        
+        """
+        Sección 4
+        Setup folders for collection
+        """
+
+        #path donde se encuentra los datos exportados
+        DATA_PATH = os.path.join('MP_DATA')
+
+        #Acciones que vamos a detectar 
+        actions = np.array(['hola', 'yo', 'estudio', 'ingenieria', 'en', 'computacion', 'gracias', 'adios', 'teamo'])
+
+        #30 videos de data
+        no_sequence = 30
+
+        #Los videos seran de 30 frames de 
+        sequence_lenght = 30
+
+        #crear los folders necesarios para guardar nuestros datos para el modelo
+        for action in actions:
+            for sequence in range(no_sequence):
+                try:
+                    os.makedirs(os.path.join(DATA_PATH, action, str(sequence)))
+                except:
+                    pass
     cap.release()
     cv2.destroyAllWindows()
-
-    
 
     #lIMPIAR agregado para mac
     for i in range(1, 10):
         cv2.waitKey(1)
 
-##EXTRACT KEYPOINTS VALUES
-pose = []
-for res in results.pose_landmarks.landmark:
-    test = np.array([res.x, res.y, res.z, res.visibility])
-    pose.append(test)
+
+        # """
+        # Sección 5
+        # Collect Keypoint Values for Training and Testing
+
+        # """
+        # cap = cv2.VideoCapture(0)
+        # with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+
+        #     for action in actions:
+        #         for sequence in range(no_sequence):
+        #             for frame_num in range(sequence_lenght):
+
+        #                 #Read feed        
+        #                 ret, frame = cap.read()
+
+        #                 #Make detectionss
+        #                 image, results = mediapipe_detection(frame, holistic)
+        #                 print(results)
+
+        #                 draw_styled_landmarks(image, results)
+
+                        #Apply collection Logic
+        #                 
+
+        #                 cv2.imshow('OpenCV Feed', image)
+
+        #         if cv2.waitKey(10) & 0xFF == ord('q'):
+        #             break
+        #         cap.release()
+        #         cv2.destroyAllWindows()
+         
+

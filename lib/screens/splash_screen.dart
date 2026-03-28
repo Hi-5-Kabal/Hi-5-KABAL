@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import '../theme/app_theme.dart';
 import 'camera_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,6 +12,8 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  static const Duration _navigationDelay = Duration(milliseconds: 4000);
+
   late AnimationController _logoController;
   late AnimationController _textController;
   late AnimationController _loadingController;
@@ -85,6 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _startAnimations();
   }
+
 //inicia las animaciones en secuencia y luego navega a la pantalla de camara
   Future<void> _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -96,7 +98,7 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 500));
     _loadingController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(_navigationDelay);
 
     if (mounted) {
       Navigator.of(context).pushReplacement(
@@ -131,86 +133,81 @@ class _SplashScreenState extends State<SplashScreen>
           color: Color.fromARGB(255, 255, 246, 228),
         ),
         child: SafeArea(
-          child: Stack(
-            children: [
-              // Main content
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo
-                    ScaleTransition(
-                      scale: _logoScale,
-                      child: FadeTransition(
-                        opacity: _logoOpacity,
-                        child: AnimatedBuilder(
-                          animation: _pulseAnim,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _pulseAnim.value,
-                              child: child,
-                            );
-                          },
-                          child: _buildLogo(),
-                        ),
-                      ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo
+                ScaleTransition(
+                  scale: _logoScale,
+                  child: FadeTransition(
+                    opacity: _logoOpacity,
+                    child: AnimatedBuilder(
+                      animation: _pulseAnim,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _pulseAnim.value,
+                          child: child,
+                        );
+                      },
+                      child: _buildLogo(),
                     ),
-
-                    const SizedBox(height: 36),
-
-                    // Nombre app y texto descriptivo
-                    SlideTransition(
-                      position: _textSlide,
-                      child: FadeTransition(
-                        opacity: _textOpacity,
-                            child: Column(
-                          children: [
-                            Text(
-                              'KABAL',
-                                  style: GoogleFonts.montserrat(
-                                color: Color.fromARGB(255, 85, 93, 103),
-                                fontSize: 34,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.6,
-                                height: 0.9,
-                              ),
-                            ),
-                                const SizedBox(height: 0),
-                                Transform.translate(
-                              offset: const Offset(0, -3),
-                              child: const Text(
-                                'Captura, traduce y comunica sin barreras.',
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 85, 93, 103),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: 0.2,
-                                  height: 1.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 64),
-
-                    // Loading indicator
-                    FadeTransition(
-                      opacity: _loadingOpacity,
-                      child: const _SplashLoader(),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 36),
+
+                // Nombre app y texto descriptivo
+                SlideTransition(
+                  position: _textSlide,
+                  child: FadeTransition(
+                    opacity: _textOpacity,
+                    child: Column(
+                      children: [
+                        Text(
+                          'KABAL',
+                          style: GoogleFonts.bebasNeue(
+                            color: Color.fromARGB(255, 85, 93, 103),
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.6,
+                            height: 0.9,
+                          ),
+                        ),
+                        Transform.translate(
+                          offset: const Offset(0, -1),
+                          child: Text(
+                            'Captura, traduce y comunica sin barreras.',
+                            style: GoogleFonts.bebasNeue(
+                              color: Color.fromARGB(255, 85, 93, 103),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 0.2,
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 64),
+
+                // Loading indicator
+                FadeTransition(
+                  opacity: _loadingOpacity,
+                  child: const _SplashLoader(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-    //Icono de la mano saludando, con animacion de pulso
+
+  //Icono de la mano saludando, con animacion de pulso
   Widget _buildLogo() {
     return const Icon(
       Icons.waving_hand,

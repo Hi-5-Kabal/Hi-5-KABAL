@@ -48,119 +48,115 @@ def draw_styled_landmarks(image, results):
                              )
 
 
+#cada landmark debe tener x, y, z si no pues se rellena con ceros
+#para manejar los errores de si el sistema no detecta manos se crea un array con ceros
+#i.e. incluso si no hay face marks vamos a pasar x un array del mismo tam
+def extract_keypoints(results):
+    pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
+    face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(1404)
+    lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
+    rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
+    return np.concatenate([pose, face, lh, rh]) #concatenar toods los resultados o sea queda como un arreglo enorme
+
+
+"""
+Sección 4
+Setup folders for collection
+"""
+#path donde se encuentra los datos exportados
+DATA_PATH = os.path.join('MP_DATA')
+
+#Acciones que vamos a detectar 
+actions = np.array(['hola', 'yo', 'estudio', 'ingenieria', 'en', 'computacion', 'gracias', 'adios', 'te amo'])
+
+#30 videos de data
+no_sequences = 30
+
+#Los videos seran de 30 frames de 
+sequence_length = 30
+
+#Folder start
+start_folder = 30
+
+#Crear la estructura de carpetas
+for action in actions: 
+    #Crear la carpeta de la acción si no existe (ej: MP_DATA/hola)
+    #exist_ok=True evita que el programa truene si la carpeta ya existe
+    os.makedirs(os.path.join(DATA_PATH, action), exist_ok=True)
+    
+    #Revisar cuál es el número de carpeta más alto para no sobrescribir
+    dir_content = os.listdir(os.path.join(DATA_PATH, action))
+    dir_folders = [f for f in dir_content if not f.startswith('.')] #Ignorar basura de Mac x los .DS_Store
+    
+    if len(dir_folders) > 0:
+        dirmax = np.max(np.array(dir_folders).astype(int))
+    else:
+        dirmax = 0
+
+    #Crear las subcarpetas para las nuevas 30 secuencias
+    for sequence in range(1, no_sequences + 1):
+        os.makedirs(os.path.join(DATA_PATH, action, str(dirmax + sequence)), exist_ok=True)
+
+
 # 2. Loop principal
 cap = cv2.VideoCapture(0)
 
 with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+
+
     print("Iniciando cámara... presiona 'q' para salir.")
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret: break
-
-        image, results = mediapipe_detection(frame, holistic)
-        print(results)
-
-        #draw landmarks
-        draw_styled_landmarks(image, results)
-
-        cv2.imshow('OpenCV Feed', image)
-
-        #if results.face_landmarks:
-            # Imprime solo los primeros 5 puntos para no saturar la consola
-            #print(results.face_landmarks.landmark[:5]) 
-        #else:
-            #print("No se detecta rostro")
-
-        if cv2.waitKey(10) & 0xFF == ord('q'):
-            break
-
-        ##EXTRACT KEYPOINTS VALUES
-        pose=[]
-        for res in results.pose_landmarks.landmark:
-            test = np.array([res.x, res.y, res.z, res.visibility])
-            pose.append(test)
+    #while cap.isOpened():
         
-        #cada landmark debe tener x, y, z si no pues se rellena con ceros
-        #para manejar los errores de si el sistema no detecta manos se crea un array con ceros
-        #i.e. incluso si no hay face marks vamos a pasar x un array del mismo tam
-        def extract_keypoints(results):
-            pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
-            face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten() if results.face_landmarks else np.zeros(1404)
-            lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(21*3)
-            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
-            return np.concatenate([pose, face, lh, rh]) #concatenar toods los resultados o sea queda como un arreglo enorme
-        
-        result_test = extract_keypoints(results)
+        #NEW LOOP
+        #Loop through actions i.e. yo, estudio,...
+    for action in actions:
+        #IMPORTANTE: Aquí buscamos desde qué carpeta empezar a grabar para esta acción
+        dir_content = [f for f in os.listdir(os.path.join(DATA_PATH, action)) if not f.startswith('.')]
+        #Grabaremos en las últimas 'no_sequences' carpetas creadas
+        current_folders = sorted([int(f) for f in dir_content])[-no_sequences:]
+        #Loop through sequences - baasically videos (30)
+        for sequence in current_folders:
+            # Loop through video length aka sequence length - frames of videos
+            for frame_num in range(sequence_length):
 
-        #len(results.left_hand_landmarks.landmark)*3 -> debería imprimir 63
+                # Read feed
+                ret, frame = cap.read()
+                if not ret: break
 
-        np.zeros(21*3)
+                # Make detections
+                image, results = mediapipe_detection(frame, holistic)
 
+                # Draw landmarks
+                draw_styled_landmarks(image, results)
+                
+                # NEW Apply wait logic
+                if frame_num == 0: # si el frame es 0 -> brake
+                    cv2.putText(image, 'STARTING COLLECTION', (120,200), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255, 0), 4, cv2.LINE_AA)
+                    cv2.putText(image, 'Collecting frames for {} Video Number {}'.format(action, sequence), (15,12), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+                    # Show to screen
+                    cv2.imshow('OpenCV Feed', image)
+                    cv2.waitKey(1000)
+                else: 
+                    cv2.putText(image, 'Collecting frames for {} Video Number {}'.format(action, sequence), (15,12), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+                    # Show to screen
+                    cv2.imshow('OpenCV Feed', image)
+                
+                # NEW Export keypoints
+                keypoints = extract_keypoints(results)
+                npy_path = os.path.join(DATA_PATH, action, str(sequence), str(frame_num))
+                np.save(npy_path, keypoints)
 
-
-        
-        
-        """
-        Sección 4
-        Setup folders for collection
-        """
-
-        #path donde se encuentra los datos exportados
-        DATA_PATH = os.path.join('MP_DATA')
-
-        #Acciones que vamos a detectar 
-        actions = np.array(['hola', 'yo', 'estudio', 'ingenieria', 'en', 'computacion', 'gracias', 'adios', 'teamo'])
-
-        #30 videos de data
-        no_sequence = 30
-
-        #Los videos seran de 30 frames de 
-        sequence_lenght = 30
-
-        #crear los folders necesarios para guardar nuestros datos para el modelo
-        for action in actions:
-            for sequence in range(no_sequence):
-                try:
-                    os.makedirs(os.path.join(DATA_PATH, action, str(sequence)))
-                except:
-                    pass
+                if cv2.waitKey(10) & 0xFF == ord('q'):
+                    break    ##to get a break between the collections 
     cap.release()
     cv2.destroyAllWindows()
-
-    #lIMPIAR agregado para mac
+    cv2.waitKey(1)
+    #lIMPIAR (4 mac lol)
     for i in range(1, 10):
         cv2.waitKey(1)
 
-
-        # """
-        # Sección 5
-        # Collect Keypoint Values for Training and Testing
-
-        # """
-        # cap = cv2.VideoCapture(0)
-        # with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-
-        #     for action in actions:
-        #         for sequence in range(no_sequence):
-        #             for frame_num in range(sequence_lenght):
-
-        #                 #Read feed        
-        #                 ret, frame = cap.read()
-
-        #                 #Make detectionss
-        #                 image, results = mediapipe_detection(frame, holistic)
-        #                 print(results)
-
-        #                 draw_styled_landmarks(image, results)
-
-                        #Apply collection Logic
-        #                 
-
-        #                 cv2.imshow('OpenCV Feed', image)
-
-        #         if cv2.waitKey(10) & 0xFF == ord('q'):
-        #             break
-        #         cap.release()
-        #         cv2.destroyAllWindows()
          
 

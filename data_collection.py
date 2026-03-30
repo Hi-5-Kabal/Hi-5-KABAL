@@ -8,8 +8,6 @@ import os
 mp_holistic = mp.solutions.holistic 
 mp_drawing = mp.solutions.drawing_utils 
 
-
-
 def mediapipe_detection(image, model):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False                  
@@ -72,7 +70,7 @@ DATA_PATH = os.path.join('MP_DATA')
 actions = np.array(['hola', 'yo', 'estudio', 'ingenieria', 'en computacion', 'gracias', 'adios', 'te amo'])
 
 #30 videos de data
-no_sequences = 30
+no_sequences = 60
 
 #Los videos seran de 30 frames de 
 sequence_length = 30
@@ -107,19 +105,25 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
 
 
     print("Iniciando cámara... presiona 'q' para salir.")
-    #while cap.isOpened():
-        
-        #NEW LOOP
-        #Loop through actions i.e. yo, estudio,...
+    
+    stop = False
+    
+    #Loop through actions i.e. yo, estudio,...
     for action in actions:
+        if stop: break
+        
         #IMPORTANTE: Aquí buscamos desde qué carpeta empezar a grabar para esta acción
         dir_content = [f for f in os.listdir(os.path.join(DATA_PATH, action)) if not f.startswith('.')]
-        #Grabaremos en las últimas 'no_sequences' carpetas creadas
-        current_folders = sorted([int(f) for f in dir_content])[-no_sequences:]
+        #Grabaremos en las últimas 'no_sequences' carpetas creadas (las 60 nuevas)
+        current_folders = sorted([int(f) for f in dir_content if f.isdigit()])[-no_sequences:]
+        
         #Loop through sequences - baasically videos (30)
         for sequence in current_folders:
+            if stop: break
+            
             # Loop through video length aka sequence length - frames of videos
             for frame_num in range(sequence_length):
+                if stop: break
 
                 # Read feed
                 ret, frame = cap.read()
@@ -139,7 +143,7 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
                     # Show to screen
                     cv2.imshow('OpenCV Feed', image)
-                    cv2.waitKey(1000)
+                    cv2.waitKey(1500) # Un poco más de tiempo para prepararte
                 else: 
                     cv2.putText(image, 'Collecting frames for {} Video Number {}'.format(action, sequence), (15,12), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
@@ -152,7 +156,9 @@ with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=
                 np.save(npy_path, keypoints)
 
                 if cv2.waitKey(10) & 0xFF == ord('q'):
-                    break    ##to get a break between the collections 
+                    stop = True
+                    break 
+
     cap.release()
     cv2.destroyAllWindows()
     cv2.waitKey(1)

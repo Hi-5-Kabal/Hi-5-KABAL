@@ -37,8 +37,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    androidResources {
+        noCompress += setOf("tflite", "lite")
+    }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1")
 }

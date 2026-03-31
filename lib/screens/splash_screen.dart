@@ -168,7 +168,7 @@ class _SplashScreenState extends State<SplashScreen>
                           'KABAL',
                           style: GoogleFonts.bebasNeue(
                             color: Color.fromARGB(255, 85, 93, 103),
-                            fontSize: 34,
+                            fontSize: 36,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.6,
                             height: 0.9,
@@ -180,7 +180,7 @@ class _SplashScreenState extends State<SplashScreen>
                             'Captura, traduce y comunica sin barreras.',
                             style: GoogleFonts.bebasNeue(
                               color: Color.fromARGB(255, 85, 93, 103),
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 0.2,
                               height: 1.0,
